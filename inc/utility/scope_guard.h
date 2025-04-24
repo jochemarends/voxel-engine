@@ -6,6 +6,9 @@
 
 namespace ja {
 
+/**
+ * Invokes callables on going out of scope.
+ */
 template<typename... Ts>
 struct scope_guard {
     scope_guard(Ts... callables) 

@@ -8,14 +8,23 @@
 
 namespace ja {
 
+/**
+ * For representing angles.
+ */
 template<std::floating_point T = float>
 struct angle {
     constexpr angle() = default;
 
+    /**
+     * Obtain angle in radians.
+     */
     [[nodiscard]] constexpr T radians() const {
         return radians_;
     }
 
+    /**
+     * Obtain angle in degrees.
+     */
     [[nodiscard]] constexpr T degrees() const {
         return radians_ * (static_cast<T>(180.0) / std::numbers::pi_v<T>);
     }
@@ -32,11 +41,17 @@ private:
     T radians_{};
 };
 
+/**
+ * Create angle in radians.
+ */
 template<std::floating_point T = float>
 [[nodiscard]] constexpr angle<T> radians(T angle) {
     return ja::angle<T>{angle};
 }
 
+/**
+ * Create angle in degrees.
+ */
 template<std::floating_point T = float>
 [[nodiscard]] constexpr angle<T> degrees(T angle) {
     return ja::angle<T>{angle * (std::numbers::pi_v<T> / static_cast<T>(180.0))};

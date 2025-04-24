@@ -4,7 +4,6 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <utility/scope_guard.h>
-#include <utility/angle.h>
 
 int main() {
     if (!glfwInit()) return EXIT_FAILURE;
