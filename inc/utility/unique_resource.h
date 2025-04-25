@@ -1,0 +1,74 @@
+#ifndef JA_HANDLE_H
+#define JA_HANDLE_H
+
+#include <utility>
+
+namespace ja {
+
+/**
+ * An RAII wrapper around for resource of any kind.
+ *
+ * Inspired by Standards Committee Paper N4189.
+ *
+ * @tparam T Type of the resource.
+ * @tparam D Type of the deleter.
+ */
+template<typename T, typename D>
+struct unique_resource {
+    unique_resource(T resource, D deleter = {})
+        :resource_{resource}, deleter_{deleter} {}
+
+    unique_resource(unique_resource&& other) noexcept
+        :resource_{std::move(other.resource_)} {}
+
+    unique_resource& operator=(unique_resource&& other) noexcept {
+        if (this != &other) {
+            swap(other);
+        }
+        return *this;
+    }
+
+    unique_resource(const unique_resource& other) = delete;
+
+    unique_resource& operator=(const unique_resource& other) = delete;
+
+    ~unique_resource() {
+        deleter_(resource_);
+    }
+
+    /**
+     * Swap resources with another instance.
+     */
+    void swap(unique_resource& other) noexcept {
+        std::swap(resource_, other.resource_);
+    }
+
+    /**
+     * Obtain the underlying resource.
+     */
+    const T& get() const {
+        return resource_;
+    }
+
+    /**
+     * Obtain the underlying resource.
+     */
+    const D& get_deleter() const {
+        return deleter_;
+    }
+
+    /**
+     * Checks whether there is a resource being managed.
+     */
+    explicit operator bool() const {
+        return resource_ != nullptr;
+    }
+private:
+    T resource_{};
+    D deleter_{};
+};
+
+}
+
+#endif
+
