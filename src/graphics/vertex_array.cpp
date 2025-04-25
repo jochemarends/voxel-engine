@@ -1,5 +1,5 @@
-#include "glad/gl.h"
 #include <graphics/vertex_array.h>
+#include "glad/gl.h"
 
 namespace ja {
 

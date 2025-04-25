@@ -1,5 +1,5 @@
-#include "glad/gl.h"
 #include <graphics/buffer.h>
+#include "glad/gl.h"
 
 namespace ja {
 
