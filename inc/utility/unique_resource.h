@@ -56,13 +56,6 @@ struct unique_resource {
     const D& get_deleter() const {
         return deleter_;
     }
-
-    /**
-     * Checks whether there is a resource being managed.
-     */
-    explicit operator bool() const {
-        return resource_ != nullptr;
-    }
 private:
     T resource_{};
     D deleter_{};
