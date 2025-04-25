@@ -12,7 +12,7 @@ target_compile_features(app PRIVATE cxx_std_26)
 
 target_include_directories(app PRIVATE inc)
 
-target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp)
+target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp src/graphics/shader.cpp)
 
 include(FetchContent)
 
