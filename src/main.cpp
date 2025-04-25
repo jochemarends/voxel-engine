@@ -1,15 +1,18 @@
+#include "glm/fwd.hpp"
+#include "utility/angle.h"
 #include <cstdlib>
-#include <functional>
 #include <memory>
 #include <print>
-#include <string_view>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <graphics/buffer.h>
 #include <graphics/program.h>
 #include <graphics/shader.h>
 #include <graphics/vertex_array.h>
 #include <utility/scope_guard.h>
+#include <world/frustrum.h>
 
 int main() {
     if (!glfwInit()) return EXIT_FAILURE;
@@ -25,41 +28,36 @@ int main() {
         }
     };
 
-    auto window = std::unique_ptr<GLFWwindow, window_deleter>{glfwCreateWindow(640, 480, "", nullptr, nullptr)};
+    auto window = std::unique_ptr<GLFWwindow, window_deleter>{glfwCreateWindow(640, 480, "Hello Triangle", nullptr, nullptr)};
 
     if (!window) {
         return EXIT_FAILURE;
     }
 
     glfwMakeContextCurrent(window.get());
+    glfwSetFramebufferSizeCallback(window.get(), []([[maybe_unused]] GLFWwindow* window, int width, int height) {
+        glViewport(0, 0, width, height);
+    });
+
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
-   const float vertices[]{
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f,
-    }; 
-
-    std::string_view vertex_shader_source{
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 aPos;\n"
-        "void main()\n"
-        "{\n"
-        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-        "}\0"
+    static const float vertices[]{
+        // positions           // texture coordinates
+         0.5f,  0.5f, 0.0f,    1.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,    1.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f,    0.0f, 0.0f,
+        -0.5f,  0.5f, 0.0f,    0.0f, 1.0f,
     };
-    auto vertex_shader = ja::make_shader_from_text(GL_VERTEX_SHADER, vertex_shader_source);
 
-    std::string_view fragment_shader_source{
-        "#version 330 core\n"
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-            "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-        "} \n"
+    static const unsigned int indices[]{  
+        0, 1, 3,
+        1, 2, 3,
     };
-    auto fragment_shader = ja::make_shader_from_text(GL_FRAGMENT_SHADER, fragment_shader_source);
+
+    auto vertex_shader = ja::make_shader_from_file(GL_VERTEX_SHADER, "res/simple.vert");
+
+    auto fragment_shader = ja::make_shader_from_file(GL_FRAGMENT_SHADER, "res/simple.frag");
 
     auto program = ja::make_program(vertex_shader, fragment_shader);
     glUseProgram(program.get());
@@ -69,16 +67,41 @@ int main() {
 
     auto vbo = ja::make_buffer();
     glBindBuffer(GL_ARRAY_BUFFER, vbo.get());
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+    auto ebo = ja::make_buffer();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo.get());
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);  
+
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        int location = glGetUniformLocation(program.get(), "model");
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
+    }
+
+    {
+        glm::mat4 view{1.0f};
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        int location = glGetUniformLocation(program.get(), "view");
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+    }
+
+    ja::frustrum frustrum{};
+
+    {
+        auto proj = glm::perspective(frustrum.fov.radians(), 640.0f / 480.0f, frustrum.near, frustrum.far);
+        int location = glGetUniformLocation(program.get(), "proj");
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(proj));
+    }
 
     while (!glfwWindowShouldClose(window.get())) {
         glClearColor(0, 156.0 / 255.0, 130 / 255.0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window.get());
         glfwPollEvents();

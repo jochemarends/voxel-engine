@@ -14,6 +14,9 @@ target_include_directories(app PRIVATE inc)
 
 target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp src/graphics/shader.cpp src/graphics/program.cpp)
 
+configure_file(res/simple.vert res/simple.vert COPYONLY)
+configure_file(res/simple.frag res/simple.frag COPYONLY)
+
 include(FetchContent)
 
 # GLFW
@@ -37,5 +40,13 @@ FetchContent_MakeAvailable(glad)
 
 glad_add_library(glad STATIC REPRODUCIBLE LOADER API gl:core=4.3)
 
-target_link_libraries(app PRIVATE glad glfw)
+# GLM
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+)
+
+FetchContent_MakeAvailable(glm)
+
+target_link_libraries(app PRIVATE glad glfw glm)
 
