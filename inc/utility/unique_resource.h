@@ -19,7 +19,10 @@ struct unique_resource {
         :resource_{resource}, deleter_{deleter} {}
 
     unique_resource(unique_resource&& other) noexcept
-        :resource_{std::move(other.resource_)} {}
+        :resource_{std::move(other.resource_)}, deleter_{std::move(other.deleter_)} {
+        other.resource_ = T{};
+        other.deleter_ = D{};
+    }
 
     unique_resource& operator=(unique_resource&& other) noexcept {
         if (this != &other) {
@@ -41,6 +44,7 @@ struct unique_resource {
      */
     void swap(unique_resource& other) noexcept {
         std::swap(resource_, other.resource_);
+        std::swap(resource_, other.deleter_);
     }
 
     /**
