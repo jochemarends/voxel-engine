@@ -12,10 +12,11 @@ target_compile_features(app PRIVATE cxx_std_26)
 
 target_include_directories(app PRIVATE inc)
 
-target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp src/graphics/shader.cpp src/graphics/program.cpp)
+target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp src/graphics/shader.cpp src/graphics/program.cpp src/graphics/texture.cpp)
 
 configure_file(res/simple.vert res/simple.vert COPYONLY)
 configure_file(res/simple.frag res/simple.frag COPYONLY)
+configure_file(res/texture-atlas.png res/texture-atlas.png COPYONLY)
 
 include(FetchContent)
 
@@ -47,6 +48,16 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(glm)
+
+# stb
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+)
+
+FetchContent_MakeAvailable(stb)
+
+target_include_directories(app PRIVATE ${stb_SOURCE_DIR})
 
 target_link_libraries(app PRIVATE glad glfw glm)
 

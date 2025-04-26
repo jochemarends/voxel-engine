@@ -10,6 +10,7 @@
 #include <graphics/buffer.h>
 #include <graphics/program.h>
 #include <graphics/shader.h>
+#include <graphics/texture.h>
 #include <graphics/vertex_array.h>
 #include <utility/scope_guard.h>
 #include <world/frustrum.h>
@@ -55,12 +56,24 @@ int main() {
         1, 2, 3,
     };
 
+    // TODO: find out if the lines below are really needed
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D_ARRAY);
+    // glEnable(GL_CULL_FACE);
+    // glFrontFace(GL_CW);
+
     auto vertex_shader = ja::make_shader_from_file(GL_VERTEX_SHADER, "res/simple.vert");
 
     auto fragment_shader = ja::make_shader_from_file(GL_FRAGMENT_SHADER, "res/simple.frag");
 
     auto program = ja::make_program(vertex_shader, fragment_shader);
     glUseProgram(program.get());
+
+    auto texture = ja::make_texture_atlas_from_file(5, 5, "res/texture-atlas.png");
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, texture.get());
+    glUniform1i(glGetUniformLocation(program.get(), "texture"), 0);
 
     auto vao = ja::make_vertex_array();
     glBindVertexArray(vao.get());
@@ -74,7 +87,10 @@ int main() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);  
+    glEnableVertexAttribArray(0); 
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     {
         glm::mat4 model = glm::mat4(1.0f);
@@ -97,9 +113,10 @@ int main() {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(proj));
     }
 
+
     while (!glfwWindowShouldClose(window.get())) {
         glClearColor(0, 156.0 / 255.0, 130 / 255.0, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
