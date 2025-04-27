@@ -6,7 +6,7 @@ namespace ja {
 namespace {
 
 /**
- * Obtain the vertices of a cube_face.
+ * Obtain the vertices of a cube face.
  */
 template<cube_face>
 const std::array<cube_vertex, 4> vertices_of;

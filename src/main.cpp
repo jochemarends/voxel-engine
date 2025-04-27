@@ -1,4 +1,6 @@
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/ext/vector_float3.hpp"
+#include "glm/geometric.hpp"
 #include <cstdlib>
 #include <memory>
 #include <print>
@@ -17,6 +19,16 @@
 #include <world/cube.h>
 
 glm::mat4 view{1.0f};
+
+void cursor_pos_callback([[maybe_unused]] GLFWwindow* window, double x, double y) {
+    constexpr float sensitivity{0.2f};
+    static glm::dvec2 old{x, y};
+
+    [[maybe_unused]] auto pitch = ja::degrees<float>((y - old.y) * sensitivity);
+    [[maybe_unused]] auto heading = ja::degrees<float>(-(old.x - x) * sensitivity);
+
+    old = {x, y};
+}
 
 int main() {
     if (!glfwInit()) return EXIT_FAILURE;
@@ -39,9 +51,15 @@ int main() {
     }
 
     glfwMakeContextCurrent(window.get());
+
     glfwSetFramebufferSizeCallback(window.get(), []([[maybe_unused]] GLFWwindow* window, int width, int height) {
         glViewport(0, 0, width, height);
     });
+
+    glfwSetCursorPosCallback(window.get(), cursor_pos_callback);
+
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwFocusWindow(window.get());
 
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
@@ -101,27 +119,44 @@ int main() {
         glClearColor(0, 156.0 / 255.0, 130 / 255.0, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        const double curr_time = glfwGetTime();
-        const double delta_time = curr_time - prev_time;
+        const float curr_time = glfwGetTime();
+        const float delta_time = curr_time - prev_time;
         prev_time = curr_time;
         
-        constexpr double speed{2.0f};
+        constexpr float speed{2.0f};
 
         // handle input
+        if (glfwGetKey(window.get(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window.get(), true);
+        }
+
+        glm::vec3 input{};
         if (glfwGetKey(window.get(), GLFW_KEY_W) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3{0.0f, 0.0f, speed * delta_time});
+            input += glm::vec3{0.0f, 0.0f, 1.0f};
         }
 
         if (glfwGetKey(window.get(), GLFW_KEY_S) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3{0.0f, 0.0f, -speed * delta_time});
+            input += glm::vec3{0.0f, 0.0f, -1.0f};
         }
 
         if (glfwGetKey(window.get(), GLFW_KEY_A) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3{speed * delta_time, 0.0f, 0.0f});
+            input += glm::vec3{1.0f, 0.0f, 0.0f};
         }
 
         if (glfwGetKey(window.get(), GLFW_KEY_D) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3{-speed * delta_time, 0.0f, 0.0f});
+            input += glm::vec3{-1.0f, 0.0f, 0.0f};
+        }
+
+        if (glfwGetKey(window.get(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            input += glm::vec3{0.0f, 1.0f, 0.0f};
+        }
+
+        if (glfwGetKey(window.get(), GLFW_KEY_SPACE) == GLFW_PRESS) {
+            input += glm::vec3{0.0f, -1.0f, 0.0f};
+        }
+
+        if (glm::length(input) > 0.0f) {
+            view = glm::translate(view, speed * delta_time * glm::normalize(input));
         }
 
         {
