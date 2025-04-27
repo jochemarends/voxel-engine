@@ -18,6 +18,7 @@ texture_handle make_texture() {
 }
 
 texture_handle make_texture_atlas_from_file(unsigned int rows, unsigned int columns, const std::string& path) {
+    // stbi_set_flip_vertically_on_load(true);
     int width{}, height{}, channels{};
     auto data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
@@ -48,7 +49,7 @@ texture_handle make_texture_atlas_from_file(unsigned int rows, unsigned int colu
         // extract tile from image
         auto buffer = std::span{data, static_cast<std::size_t>(width * height * channels)} 
             | std::views::chunk(column_stride)
-            | std::views::drop(row * columns + column)
+            | std::views::drop(row * columns * tile_height + column)
             | std::views::stride(columns)
             | std::views::take(tile_height)
             | std::views::join
