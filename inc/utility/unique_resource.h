@@ -50,14 +50,14 @@ struct unique_resource {
     /**
      * Obtain the underlying resource.
      */
-    const T& get() const {
+    [[nodiscard]] const T& get() const {
         return resource_;
     }
 
     /**
      * Obtain the underlying resource.
      */
-    const D& get_deleter() const {
+    [[nodiscard]] const D& get_deleter() const {
         return deleter_;
     }
 private:
