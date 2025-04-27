@@ -2,7 +2,6 @@
 #define JA_FRUSTRUM_H
 
 #include <utility/angle.h>
-#include <world/transform.h>
 
 namespace ja {
 
