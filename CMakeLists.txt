@@ -14,6 +14,8 @@ target_include_directories(app PRIVATE inc)
 
 target_sources(app PRIVATE src/graphics/buffer.cpp src/graphics/vertex_array.cpp src/graphics/shader.cpp src/graphics/program.cpp src/graphics/texture.cpp)
 
+target_sources(app PRIVATE src/world/cube.cpp)
+
 configure_file(res/simple.vert res/simple.vert COPYONLY)
 configure_file(res/simple.frag res/simple.frag COPYONLY)
 configure_file(res/texture-atlas.png res/texture-atlas.png COPYONLY)
