@@ -1,12 +1,12 @@
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/ext/vector_float3.hpp"
-#include "glm/geometric.hpp"
 #include <cstdlib>
 #include <memory>
 #include <print>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/geometric.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <graphics/buffer.h>
 #include <graphics/program.h>
@@ -18,14 +18,23 @@
 #include <world/frustrum.h>
 #include <world/cube.h>
 
-glm::mat4 view{1.0f};
+struct {
+    glm::vec3 pos{};
+    glm::vec3 forward{0.0f, 0.0f, 1.0f};
+    glm::vec3 up{0.0f, 1.0f, 0.0f};
+} camera{};
 
 void cursor_pos_callback([[maybe_unused]] GLFWwindow* window, double x, double y) {
     constexpr float sensitivity{0.2f};
     static glm::dvec2 old{x, y};
 
-    [[maybe_unused]] auto pitch = ja::degrees<float>((y - old.y) * sensitivity);
-    [[maybe_unused]] auto heading = ja::degrees<float>(-(old.x - x) * sensitivity);
+    auto yaw = ja::degrees<float>((old.x - x) * sensitivity);
+    auto pitch = ja::degrees<float>(-(y - old.y) * sensitivity);
+
+    auto rot = glm::rotate(glm::mat4{1.0f}, yaw.radians(), glm::vec3{0.0f, 1.0f, 0.0f});
+    rot = glm::rotate(rot, pitch.radians(), glm::normalize(glm::cross(camera.forward, camera.up)));
+    camera.forward = glm::normalize(glm::vec3{rot * glm::vec4{camera.forward, 0.0f}});
+    camera.up = glm::normalize(glm::vec3{rot * glm::vec4{camera.up, 0.0f}});
 
     old = {x, y};
 }
@@ -100,7 +109,7 @@ int main() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_type), reinterpret_cast<void*>(offsetof(vertex_type, texcoord)));
     glEnableVertexAttribArray(1);
 
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    camera.pos = glm::vec3{0.0f, 0.0f, -3.0f};
 
     ja::frustrum frustrum{};
 
@@ -122,7 +131,7 @@ int main() {
         const float curr_time = glfwGetTime();
         const float delta_time = curr_time - prev_time;
         prev_time = curr_time;
-        
+
         constexpr float speed{2.0f};
 
         // handle input
@@ -148,15 +157,19 @@ int main() {
         }
 
         if (glfwGetKey(window.get(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            input += glm::vec3{0.0f, 1.0f, 0.0f};
-        }
-
-        if (glfwGetKey(window.get(), GLFW_KEY_SPACE) == GLFW_PRESS) {
             input += glm::vec3{0.0f, -1.0f, 0.0f};
         }
 
+        if (glfwGetKey(window.get(), GLFW_KEY_SPACE) == GLFW_PRESS) {
+            input += glm::vec3{0.0f, 1.0f, 0.0f};
+        }
+
         if (glm::length(input) > 0.0f) {
-            view = glm::translate(view, speed * delta_time * glm::normalize(input));
+            glm::vec3 forward = glm::normalize(glm::vec3{camera.forward.x, 0.0f, camera.forward.z});
+            glm::vec3 right = glm::normalize(glm::cross(camera.up, camera.forward));
+            camera.pos += forward * speed * delta_time * glm::normalize(input).z;
+            camera.pos += right * speed * delta_time * glm::normalize(input).x;
+            camera.pos.y += speed * delta_time * glm::normalize(input).y;
         }
 
         {
@@ -167,6 +180,7 @@ int main() {
         }
 
         {
+            glm::mat4 view = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
             int location = glGetUniformLocation(program.get(), "view");
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
         }
