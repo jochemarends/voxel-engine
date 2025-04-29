@@ -19,6 +19,11 @@ struct chunk {
     static constexpr std::size_t height{Height};
     static constexpr std::size_t depth{Depth};
 
+    chunk() {
+        auto data = std::views::join(std::views::join(data_));
+        std::ranges::fill(data, -1);
+    }
+
     void rebuild();
 
     [[nodiscard]] GLuint vertex_array() const { return vao_.get(); }
@@ -28,15 +33,15 @@ struct chunk {
     auto&& operator[](this Self&& self, std::size_t i, std::size_t j, std::size_t k) {
         return self.data_[i][j][k];
     }
-private:
     [[nodiscard]] auto indices() const;
+private:
 
     vertex_array_handle vao_{make_vertex_array()};
     buffer_handle vbo_{make_buffer()};
     buffer_handle ebo_{make_buffer()};
     std::size_t index_count_{};
 
-    bool data_[Width][Height][Depth]{};
+    int data_[Width][Height][Depth]{};
 };
 
 template<std::size_t Width, std::size_t Height, std::size_t Depth>
@@ -47,13 +52,14 @@ void chunk<Width, Height, Depth>::rebuild() {
     using index_type = std::ranges::range_value_t<decltype(indices)>;
 
     for (auto [index, block] : std::views::zip(this->indices(), std::views::join(std::views::join(data_)))) {
-        if (!block) continue;
+        if (block < 0) continue;
         auto [i, j, k] = index;
         
         const auto offset = vertices.size();
 
-        std::ranges::copy(cube_vertices() | std::views::transform([i, j, k](vertex_type vertex) {
+        std::ranges::copy(cube_vertices() | std::views::transform([block, i, j, k](vertex_type vertex) {
             vertex.position += glm::vec3{i, j, k};
+            vertex.texcoord.z = block;
             return vertex;
         }), std::back_inserter(vertices));
 
@@ -75,7 +81,7 @@ void chunk<Width, Height, Depth>::rebuild() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_type), reinterpret_cast<void*>(offsetof(vertex_type, texcoord)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), reinterpret_cast<void*>(offsetof(vertex_type, texcoord)));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);

@@ -13,6 +13,7 @@
 #include <graphics/shader.h>
 #include <graphics/texture.h>
 #include <graphics/vertex_array.h>
+#include <ranges>
 #include <utility/angle.h>
 #include <utility/scope_guard.h>
 #include <world/frustrum.h>
@@ -120,9 +121,43 @@ int main() {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(proj));
     }
 
-    ja::chunk<2, 2, 2> chunk{};
-    chunk[0, 0, 1] = true;
-    chunk[0, 1, 0] = true;
+    ja::chunk<8, 4, 7> chunk{};
+
+    constexpr int empty{-1};
+    constexpr int grass{0};
+
+    for (auto [i, j, k] : chunk.indices()) {
+        constexpr int dirt{1};
+        constexpr int brick{6};
+        constexpr int orange{5};
+
+        if (j == 0) {
+            chunk[i, j, k] = dirt;
+            continue;
+        }
+
+        if ((i >= 1 && i <= 6) && ((k >= 1 && k <= 5))) {
+            if (j == 1 || j == 2) {
+                if ((i > 1 && i < 6) && (k > 1 && k < 5)) {
+                    continue;;
+                }
+                chunk[i, j, k] = brick;
+            } else {
+                chunk[i, j, k] = orange;
+            }
+        }
+    }
+
+    // plants
+    chunk[2, 1, 0] = grass;
+    chunk[5, 1, 0] = grass;
+
+    // door
+    chunk[4, 1, 1] = empty;
+    chunk[4, 2, 1] = empty;
+    chunk[3, 1, 1] = empty;
+    chunk[3, 2, 1] = empty;
+
     chunk.rebuild();
     glBindVertexArray(chunk.vertex_array());
 
