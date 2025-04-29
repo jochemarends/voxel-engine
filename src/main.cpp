@@ -16,6 +16,7 @@
 #include <utility/angle.h>
 #include <utility/scope_guard.h>
 #include <world/frustrum.h>
+#include <world/chunk.h>
 #include <world/cube.h>
 
 struct {
@@ -119,6 +120,12 @@ int main() {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(proj));
     }
 
+    ja::chunk<2, 2, 2> chunk{};
+    chunk[0, 0, 1] = true;
+    chunk[0, 1, 0] = true;
+    chunk.rebuild();
+    glBindVertexArray(chunk.vertex_array());
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D_ARRAY);
 
@@ -175,6 +182,7 @@ int main() {
         {
             static glm::mat4 model = glm::mat4(1.0f);
             model = glm::rotate(model, ja::degrees(45.0f * static_cast<float>(delta_time)).radians(), glm::vec3{0.0f, 1.0f, 0.0f});
+            model = glm::mat4(1.0f);
             int location = glGetUniformLocation(program.get(), "model");
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
         }
@@ -185,7 +193,7 @@ int main() {
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
         }
 
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, chunk.index_count(), GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window.get());
         glfwPollEvents();
